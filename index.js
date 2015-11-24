@@ -13,7 +13,7 @@ var xml = function(options) {
     if (ad.sequence) adOptions.sequence = ad.sequence;
     var Ad = response.element('Ad', adOptions);
     var creatives;
-    if (ad.structure.toLowerCase() === 'wrapper') { 
+    if (ad.structure.toLowerCase() === 'wrapper') {
       var wrapper = Ad.element('Wrapper');
       wrapper.element('AdSystem', ad.AdSystem.name, { version : ad.AdSystem.version });
       wrapper.element('VASTAdTagURI').cdata(ad.VASTAdTagURI);
@@ -65,7 +65,7 @@ var xml = function(options) {
             var attributes = { event : trackingEvent.event };
             if (trackingEvent.offset) attributes.offset = trackingEvent.offset;
             trackingEvents.element('Tracking', trackingEvent.url, attributes);
-          } 
+          }
         });
         if (c.AdParameters) creativeType.element('AdParameters').cdata(c.AdParameters);
         var videoClicks = creativeType.element('VideoClicks');
@@ -81,7 +81,7 @@ var xml = function(options) {
       nonLinearCreatives.forEach(function(c){
         var nonLinearAds = creatives.element('Creative').element('NonLinearAds');
         var creativeType = nonLinearAds.element(c.type, c.attributes);
-        c.resources.forEach(function(resource) { 
+        c.resources.forEach(function(resource) {
           var attributes = {}
           if (resource.creativeType) attributes.creativeType = resource.creativeType;
           creativeType.element(resource.type, resource.uri, attributes);
@@ -94,10 +94,24 @@ var xml = function(options) {
       if (companionAdCreatives.length > 0) var companionAds = creatives.element('Creative').element('CompanionAds');
       companionAdCreatives.forEach(function(c) {
         companion = companionAds.element('Companion', c.attributes);
-        c.resources.forEach(function(r) { 
-          companion.element(r.type, r.uri, (r.creativeType) ? { creativeType : r.creativeType } : {});
+        c.resources.forEach(function(r) {
+          companion.element(r.type, (r.creativeType) ? { creativeType : r.creativeType } : {}).cdata(r.uri);
           if (r.adParameters) companion.element('AdParameters', r.adParameters.data, { xmlEncoded : r.adParameters.xmlEncoded });
         });
+        c.clickThroughs.forEach(function(clickThrough) {
+          companion.element('CompanionClickThrough').cdata(clickThrough);
+        });
+        // lets check if there are any clickThrough tracking events
+        if (c.clickThroughTracking) {
+          companion.element('CompanionClickTracking').cdata(c.clickThroughTracking);
+        }
+        // lets check if there are any tracking events to append to the XML...
+        if (c.trackingEvents.length > 0) {
+          var companionTracking = companion.element('TrackingEvents');
+          c.trackingEvents.forEach(function(tracking) {
+            companionTracking.element('Tracking', { event: tracking.event }).cdata(tracking.url);
+          });
+        }
       });
     if (ad.Extensions) {
       var extensions = inline.element('Extensions');
@@ -117,7 +131,7 @@ function VAST(settings) {
   this.attachAd = function(settings) {
     var ad = new Ad(settings);
     this.ads.push(ad);
-    return ad; 
+    return ad;
   };
   this.xml = xml;
 }
